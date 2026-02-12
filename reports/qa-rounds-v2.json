@@ -1,0 +1,53 @@
+[
+  {
+    "round": 1,
+    "viewport": {
+      "width": 1440,
+      "height": 980
+    },
+    "checks": {
+      "first_page_seconds": 0.35,
+      "annotation_card_after_click": 1,
+      "goto_page_10_visible": true,
+      "mode_switch": true,
+      "persist_before": 1,
+      "persist_after_reload": 1,
+      "error_state_visible": true
+    },
+    "issues": []
+  },
+  {
+    "round": 2,
+    "viewport": {
+      "width": 1200,
+      "height": 820
+    },
+    "checks": {
+      "first_page_seconds": 0.43,
+      "annotation_card_after_click": 1,
+      "goto_page_10_visible": true,
+      "mode_switch": true,
+      "persist_before": 1,
+      "persist_after_reload": 1,
+      "error_state_visible": true
+    },
+    "issues": []
+  },
+  {
+    "round": 3,
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "checks": {
+      "first_page_seconds": 0.93,
+      "annotation_card_after_click": 1,
+      "goto_page_10_visible": true,
+      "mode_switch": true,
+      "persist_before": 1,
+      "persist_after_reload": 1,
+      "error_state_visible": true
+    },
+    "issues": []
+  }
+]
