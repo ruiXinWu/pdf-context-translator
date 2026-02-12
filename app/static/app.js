@@ -341,12 +341,100 @@ function buildReflowLines(items) {
     const text = normalizeText(item.str || "");
     if (!text) continue;
     if (/^\d+\s+of\s+\d+$/i.test(text)) continue;
+    if (/^war and peace$/i.test(text)) continue;
+    if (/^free ebooks at/i.test(text)) continue;
+    if (/^planet ebook/i.test(text)) continue;
+    if (/^chapter\s+[ivxlcdm0-9]+/i.test(text)) continue;
     let line = lines.find((ln) => Math.abs(ln.y - y) <= 4);
     if (!line) { line = { y, chunks: [] }; lines.push(line); }
     line.chunks.push(item);
   }
   lines.sort((a, b) => b.y - a.y);
-  return lines.map((ln) => ln.chunks.sort((a, b) => (a.transform?.[4] || 0) - (b.transform?.[4] || 0)));
+  for (const ln of lines) ln.chunks.sort((a, b) => (a.transform?.[4] || 0) - (b.transform?.[4] || 0));
+  return lines;
+}
+
+function lineToText(line) {
+  const raw = line.chunks.map((c) => c.str || "").join(" ");
+  return normalizeText(raw).replace(/\s+([,.;:!?])/g, "$1");
+}
+
+function buildReflowParagraphs(lines) {
+  const paras = [];
+  let current = [];
+  let prevY = null;
+
+  const pushCurrent = () => {
+    if (!current.length) return;
+    const text = current.join(" ").replace(/\s+([,.;:!?])/g, "$1").trim();
+    if (text.length > 2) paras.push(text);
+    current = [];
+  };
+
+  for (const line of lines) {
+    const text = lineToText(line);
+    if (!text) continue;
+
+    const gap = prevY == null ? 0 : Math.abs(prevY - line.y);
+    const paragraphBreak = gap > 22 || /^["“”'‘’\-–—\d\s]*chapter\b/i.test(text);
+
+    if (paragraphBreak) pushCurrent();
+
+    if (current.length) {
+      const last = current[current.length - 1];
+      if (/[-‑]$/.test(last) && /^[A-Za-z]/.test(text)) {
+        current[current.length - 1] = last.replace(/[-‑]$/, "") + text;
+      } else {
+        current.push(text);
+      }
+    } else {
+      current.push(text);
+    }
+
+    prevY = line.y;
+  }
+
+  pushCurrent();
+  return paras;
+}
+
+function renderParagraphWithClickableWords(p, text, pageNum) {
+  for (const tk of tokenizeText(text)) {
+    if (/^\s+$/.test(tk)) { p.appendChild(document.createTextNode(tk)); continue; }
+    if (isEnglishWord(tk)) {
+      const sp = document.createElement("span");
+      sp.className = "word-token";
+      sp.textContent = tk;
+      sp.addEventListener("click", async () => {
+        sp.classList.add("active");
+        const anchor = { x: 10, y: 10, w: 10, h: 10 };
+        createAnnotation({ word: tk, pageNum, anchor });
+
+        let badge = sp.nextElementSibling;
+        if (!badge || !badge.classList.contains("reflow-gloss")) {
+          badge = document.createElement("span");
+          badge.className = "reflow-gloss";
+          sp.insertAdjacentElement("afterend", badge);
+        }
+        badge.textContent = "翻译中…";
+
+        try {
+          const pageText = state.pageTextStore.get(pageNum) || "";
+          const sentence = extractSentence(pageText, tk) || pageText.slice(0, 220);
+          const out = await translateWord(tk, sentence);
+          const wordZh = out.word_only_translation || out.contextual_translation || "(无结果)";
+          badge.textContent = wordZh;
+        } catch {
+          badge.textContent = "翻译失败";
+        }
+      });
+      p.appendChild(sp);
+    } else {
+      const plain = document.createElement("span");
+      plain.textContent = tk;
+      p.appendChild(plain);
+    }
+  }
 }
 
 function renderReflowPage(pageNum, items) {
@@ -354,48 +442,16 @@ function renderReflowPage(pageNum, items) {
   page.className = "reflow-page";
   page.dataset.pageNum = String(pageNum);
 
-  for (const line of buildReflowLines(items)) {
+  const lines = buildReflowLines(items);
+  const paragraphs = buildReflowParagraphs(lines);
+
+  paragraphs.forEach((paraText, idx) => {
     const p = document.createElement("p");
-    for (const chunk of line) {
-      for (const tk of tokenizeText(chunk.str || "")) {
-        if (/^\s+$/.test(tk)) { p.appendChild(document.createTextNode(tk)); continue; }
-        if (isEnglishWord(tk)) {
-          const sp = document.createElement("span");
-          sp.className = "word-token";
-          sp.textContent = tk;
-          sp.addEventListener("click", async () => {
-            sp.classList.add("active");
-            const anchor = { x: 10, y: 10, w: 10, h: 10 };
-            createAnnotation({ word: tk, pageNum, anchor });
-
-            let badge = sp.nextElementSibling;
-            if (!badge || !badge.classList.contains("reflow-gloss")) {
-              badge = document.createElement("span");
-              badge.className = "reflow-gloss";
-              sp.insertAdjacentElement("afterend", badge);
-            }
-            badge.textContent = "翻译中…";
-
-            try {
-              const pageText = state.pageTextStore.get(pageNum) || "";
-              const sentence = extractSentence(pageText, tk) || pageText.slice(0, 220);
-              const out = await translateWord(tk, sentence);
-              const wordZh = out.word_only_translation || out.contextual_translation || "(无结果)";
-              badge.textContent = wordZh;
-            } catch {
-              badge.textContent = "翻译失败";
-            }
-          });
-          p.appendChild(sp);
-        } else {
-          const plain = document.createElement("span");
-          plain.textContent = tk;
-          p.appendChild(plain);
-        }
-      }
-    }
+    if (idx > 0 && !/^['"“‘(\[]/.test(paraText)) p.classList.add("indent");
+    renderParagraphWithClickableWords(p, paraText, pageNum);
     page.appendChild(p);
-  }
+  });
+
   el.reflowHost.appendChild(page);
 }
 

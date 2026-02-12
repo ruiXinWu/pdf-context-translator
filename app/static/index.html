@@ -120,28 +120,41 @@
       .gloss-inline.error { border-color: #fecaca; background: #fff1f2; }
 
       .reflow-page {
-        width: min(980px, calc(100vw - 430px));
+        width: min(760px, calc(100vw - 460px));
         margin: 0 auto;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 12px 24px rgba(15,23,42,.08);
-        padding: 26px 30px;
-        line-height: 1.88;
-        font-size: 19px;
+        background: #fffdf7;
+        border-radius: 6px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        border: 1px solid #ece7da;
+        padding: 44px 54px;
+        font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+        line-height: 1.92;
+        font-size: 21px;
+        color: #1f2937;
+        letter-spacing: 0.01em;
       }
-      .word-token { cursor: pointer; border-radius: 4px; }
-      .word-token:hover { background: #e0edff; }
-      .word-token.active { background: #bfdbfe; }
+      .reflow-page p {
+        margin: 0;
+        text-align: justify;
+        text-justify: inter-word;
+      }
+      .reflow-page p + p { margin-top: 0.85em; }
+      .reflow-page p.indent { text-indent: 1.8em; }
+
+      .word-token { cursor: pointer; border-radius: 3px; }
+      .word-token:hover { background: #fbe7b8; }
+      .word-token.active { background: #f5d88e; }
       .reflow-gloss {
         display: inline-flex;
         align-items: center;
         gap: 6px;
         margin-left: 6px;
-        border: 1px solid #bfdbfe;
-        background: #eff6ff;
+        border: 1px solid #d8c089;
+        background: #f8e9c8;
+        color: #5b3f1b;
         border-radius: 999px;
-        padding: 2px 8px;
-        font-size: .76em;
+        padding: 1px 8px;
+        font-size: .7em;
       }
 
       .panel {
