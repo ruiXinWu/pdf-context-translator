@@ -317,6 +317,10 @@ function createAnnotation({ word, pageNum, anchor }) {
   persist();
   renderPanel();
   renderPageGlosses(pageNum);
+  status(`已添加：${word}`);
+  if (window.matchMedia && window.matchMedia("(max-width: 940px)").matches) {
+    el.annotationPanel?.classList.add("open");
+  }
   finishTranslate(a);
 }
 
