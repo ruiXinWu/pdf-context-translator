@@ -291,18 +291,18 @@ async function finishTranslate(annotation) {
   renderPageGlosses(annotation.pageNum);
 }
 
-function createAnnotation({ word, pageNum, anchor }) {
+function createAnnotation({ word, pageNum, anchor, pretranslated = null, sentenceOverride = null }) {
   const pageText = state.pageTextStore.get(pageNum) || "";
-  const sentence = extractSentence(pageText, word) || pageText.slice(0, 240);
+  const sentence = sentenceOverride || extractSentence(pageText, word) || pageText.slice(0, 240);
   const id = makeId();
   const a = {
     id,
     pageNum,
     word,
     sentence,
-    status: "loading",
-    wordZh: "翻译中…",
-    contextZh: "翻译中…",
+    status: pretranslated ? "done" : "loading",
+    wordZh: pretranslated ? (pretranslated.word_only_translation || pretranslated.contextual_translation || "(空)") : "翻译中…",
+    contextZh: pretranslated ? (pretranslated.contextual_translation || "(空)") : "翻译中…",
     createdAt: new Date().toISOString(),
     anchorX: anchor?.x ?? 10,
     anchorY: anchor?.y ?? 10,
@@ -321,7 +321,7 @@ function createAnnotation({ word, pageNum, anchor }) {
   if (window.matchMedia && window.matchMedia("(max-width: 940px)").matches) {
     el.annotationPanel?.classList.add("open");
   }
-  finishTranslate(a);
+  if (!pretranslated) finishTranslate(a);
 }
 
 function tokenizeText(text) {
@@ -408,7 +408,6 @@ function renderParagraphWithClickableWords(p, text, pageNum) {
       sp.addEventListener("click", async () => {
         sp.classList.add("active");
         const anchor = { x: 10, y: 10, w: 10, h: 10 };
-        createAnnotation({ word: tk, pageNum, anchor });
 
         let badge = sp.nextElementSibling;
         if (!badge || !badge.classList.contains("reflow-gloss")) {
@@ -424,8 +423,10 @@ function renderParagraphWithClickableWords(p, text, pageNum) {
           const out = await translateWord(tk, sentence);
           const wordZh = out.word_only_translation || out.contextual_translation || "(无结果)";
           badge.textContent = wordZh;
+          createAnnotation({ word: tk, pageNum, anchor, pretranslated: out, sentenceOverride: sentence });
         } catch {
           badge.textContent = "翻译失败";
+          createAnnotation({ word: tk, pageNum, anchor });
         }
       });
       p.appendChild(sp);
