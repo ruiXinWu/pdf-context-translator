@@ -15,6 +15,16 @@
         --line: #dbe3ef;
         --danger: #b91c1c;
         --ok: #166534;
+
+        --reflow-font-size: 21px;
+        --reflow-line-height: 1.92;
+        --reflow-width: 760px;
+        --reflow-pad-x: 54px;
+        --reflow-pad-y: 44px;
+        --reflow-theme-bg: #fffdf7;
+        --reflow-theme-text: #1f2937;
+        --reflow-theme-border: #ece7da;
+        --reflow-theme-shadow: rgba(15, 23, 42, 0.08);
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -58,10 +68,12 @@
 
       #gotoPageInput { width: 88px; padding: 7px 8px; }
       #pageJumpBtn { padding: 7px 10px; }
+      #searchInput { width: 190px; padding: 7px 10px; }
+      #bookshelfSelect { max-width: 220px; padding: 7px 10px; }
 
       .main {
         display: grid;
-        grid-template-columns: minmax(0,1fr) 330px;
+        grid-template-columns: minmax(0,1fr) 360px;
         gap: 12px;
         padding: 12px;
       }
@@ -96,6 +108,8 @@
       }
       .textLayer span:hover { background: rgba(37,99,235,.14); }
       .textLayer span.annotated { background: rgba(59,130,246,.22); }
+      .textLayer span.known { outline: 1px solid rgba(34,197,94,.18); }
+      .textLayer span.autoMark { background: rgba(250,204,21,.12); }
       .gloss-layer { z-index: 4; pointer-events: none; }
       .gloss-inline {
         position: absolute;
@@ -120,17 +134,17 @@
       .gloss-inline.error { border-color: #fecaca; background: #fff1f2; }
 
       .reflow-page {
-        width: min(760px, calc(100vw - 460px));
+        width: min(var(--reflow-width), calc(100vw - 490px));
         margin: 0 auto;
-        background: #fffdf7;
+        background: var(--reflow-theme-bg);
         border-radius: 6px;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-        border: 1px solid #ece7da;
-        padding: 44px 54px;
+        box-shadow: 0 8px 20px var(--reflow-theme-shadow);
+        border: 1px solid var(--reflow-theme-border);
+        padding: var(--reflow-pad-y) var(--reflow-pad-x);
         font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-        line-height: 1.92;
-        font-size: 21px;
-        color: #1f2937;
+        line-height: var(--reflow-line-height);
+        font-size: var(--reflow-font-size);
+        color: var(--reflow-theme-text);
         letter-spacing: 0.01em;
       }
       .reflow-page p {
@@ -144,6 +158,7 @@
       .word-token { cursor: pointer; border-radius: 3px; }
       .word-token:hover { background: #fbe7b8; }
       .word-token.active { background: #f5d88e; }
+      .word-token.known { outline: 1px solid rgba(34,197,94,.18); }
       .reflow-gloss {
         display: inline-flex;
         align-items: center;
@@ -156,6 +171,7 @@
         padding: 1px 8px;
         font-size: .7em;
       }
+      .reflow-gloss.known { border-color: rgba(34,197,94,.38); background: rgba(187,247,208,.38); color: #14532d; }
 
       .panel {
         background: var(--panel);
@@ -164,6 +180,7 @@
         min-height: calc(100vh - 96px);
         display: flex;
         flex-direction: column;
+        overflow: hidden;
       }
       .panel-head {
         position: sticky;
@@ -174,7 +191,12 @@
         z-index: 2;
       }
       .panel-head h3 { margin: 0 0 8px; font-size: 15px; }
+      .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tab-btn { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+      .tab-btn.active { background: #dbeafe; color: #1e3a8a; border-color: #bfdbfe; font-weight: 600; }
       .panel-body { padding: 10px; overflow: auto; }
+      .panel-section.hidden { display: none; }
+
       .annotation-list { display: flex; flex-direction: column; gap: 8px; }
       .anno-card {
         border: 1px solid var(--line);
@@ -187,16 +209,40 @@
       .anno-meta { color: var(--muted); font-size: 12px; }
       .anno-zh { color: #1e3a8a; font-weight: 600; font-size: 13px; }
       .anno-ctx { color: #334155; font-size: 12px; margin-top: 3px; }
-      .anno-actions { margin-top: 6px; display: flex; gap: 6px; }
+      .anno-actions { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
       .anno-actions button { border: 1px solid var(--line); background: #fff; border-radius: 8px; font-size: 12px; padding: 4px 7px; cursor: pointer; }
       .anno-actions .danger { color: var(--danger); }
       .empty { color: var(--muted); font-size: 13px; padding: 20px 4px; }
       .status-ok { color: var(--ok); }
       .status-err { color: var(--danger); }
 
+      .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+      .row .left { display: flex; flex-direction: column; gap: 2px; }
+      .row .title { font-weight: 700; }
+      .row .sub { color: var(--muted); font-size: 12px; }
+      .row .right { display: flex; align-items: center; gap: 6px; }
+      .pill { border: 1px solid var(--line); background: #f8fafc; border-radius: 999px; padding: 3px 8px; font-size: 12px; color: var(--muted); }
+
+      .toast {
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15,23,42,.94);
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: none;
+        z-index: 80;
+        max-width: calc(100vw - 24px);
+      }
+      .toast .actions { margin-top: 6px; display: flex; gap: 8px; }
+      .toast button { border: 1px solid rgba(255,255,255,.22); background: transparent; color: #fff; border-radius: 10px; padding: 5px 10px; cursor: pointer; }
+
       #panelToggle { display: none; }
 
-      @media (max-width: 940px) {
+      @media (max-width: 1040px) {
         .main { grid-template-columns: 1fr; }
         .reflow-page { width: calc(100vw - 28px); padding: 18px 14px; font-size: 18px; }
         .panel {
@@ -204,7 +250,7 @@
           right: 8px;
           left: 8px;
           bottom: 8px;
-          top: 92px;
+          top: 110px;
           transform: translateY(108%);
           transition: transform .22s ease;
           z-index: 50;
@@ -220,6 +266,7 @@
       <header class="topbar">
         <div class="topbar-row">
           <input id="pdfInput" class="btn" type="file" accept="application/pdf" />
+          <select id="bookshelfSelect" title="Bookshelf"></select>
           <span class="chip" id="pageCount">Pages: 0</span>
           <span class="chip" id="statusHint">就绪</span>
           <div class="seg" role="tablist" aria-label="Reading mode">
@@ -230,7 +277,9 @@
           <button id="nextPageBtn" class="btn ghost">下一页</button>
           <input id="gotoPageInput" type="number" min="1" placeholder="页码" />
           <button id="pageJumpBtn" class="btn">跳转</button>
-          <button id="panelToggle" class="btn">注释面板</button>
+          <input id="searchInput" placeholder="搜索(英文)" />
+          <button id="searchBtn" class="btn">搜索</button>
+          <button id="panelToggle" class="btn">侧栏</button>
         </div>
       </header>
 
@@ -242,18 +291,124 @@
 
         <aside class="panel" id="annotationPanel">
           <div class="panel-head">
-            <h3>翻译注释</h3>
-            <div class="topbar-row">
+            <h3 id="panelTitle">本书</h3>
+            <div class="tabs">
+              <button class="tab-btn active" data-tab="annos">注释</button>
+              <button class="tab-btn" data-tab="vocab">词汇</button>
+              <button class="tab-btn" data-tab="search">搜索</button>
+              <button class="tab-btn" data-tab="settings">设置</button>
+            </div>
+            <div class="topbar-row" style="margin-top:8px;">
+              <button id="jumpLastBtn" class="btn">跳到最近翻译</button>
+              <button id="exportBtn" class="btn">导出</button>
+              <button id="importBtn" class="btn">导入</button>
+              <input id="importInput" type="file" accept="application/json" style="display:none" />
               <button id="clearAllBtn" class="btn">清空本书注释</button>
             </div>
           </div>
+
           <div class="panel-body">
-            <div class="annotation-list" id="annotationList"></div>
-            <div class="empty" id="annotationEmpty">点击单词后，翻译注释会出现在这里，并自动保存。</div>
+            <section class="panel-section" id="tabAnnos">
+              <div class="annotation-list" id="annotationList"></div>
+              <div class="empty" id="annotationEmpty">点击单词后，翻译注释会出现在这里，并自动保存。</div>
+            </section>
+
+            <section class="panel-section hidden" id="tabVocab">
+              <div class="kv">
+                <label class="chip"><input type="checkbox" id="hideKnown" /> 隐藏已掌握</label>
+                <span class="chip" id="vocabCount">0 words</span>
+              </div>
+              <div style="height:10px"></div>
+              <div id="vocabList" class="annotation-list"></div>
+              <div class="empty" id="vocabEmpty">还没有词汇。点击单词进行翻译后，这里会形成可复习的词表。</div>
+            </section>
+
+            <section class="panel-section hidden" id="tabSearch">
+              <div class="chip" id="searchHint">输入搜索词(英文)，点击上方“搜索”。</div>
+              <div style="height:10px"></div>
+              <div id="searchResults" class="annotation-list"></div>
+              <div class="empty" id="searchEmpty" style="display:none">没有找到结果。</div>
+            </section>
+
+            <section class="panel-section hidden" id="tabSettings">
+              <div class="annotation-list">
+                <div class="row">
+                  <div class="left">
+                    <div class="title">重排字号</div>
+                    <div class="sub">影响重排阅读模式</div>
+                  </div>
+                  <div class="right">
+                    <input id="fontSize" type="range" min="16" max="30" step="1" />
+                    <span class="pill" id="fontSizeVal"></span>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="left">
+                    <div class="title">行距</div>
+                    <div class="sub">更大行距更易读</div>
+                  </div>
+                  <div class="right">
+                    <input id="lineHeight" type="range" min="1.4" max="2.2" step="0.05" />
+                    <span class="pill" id="lineHeightVal"></span>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="left">
+                    <div class="title">版心宽度</div>
+                    <div class="sub">控制每行字符数</div>
+                  </div>
+                  <div class="right">
+                    <input id="pageWidth" type="range" min="560" max="900" step="10" />
+                    <span class="pill" id="pageWidthVal"></span>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="left">
+                    <div class="title">主题</div>
+                    <div class="sub">纸张 / 深色</div>
+                  </div>
+                  <div class="right">
+                    <select id="themeSelect">
+                      <option value="paper">Paper</option>
+                      <option value="dark">Dark</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="left">
+                    <div class="title">自动标记已掌握</div>
+                    <div class="sub">在正文里轻量标记已掌握单词</div>
+                  </div>
+                  <div class="right">
+                    <label class="chip"><input type="checkbox" id="autoMarkKnown" /> 开启</label>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="left">
+                    <div class="title">自动翻译(轻量)</div>
+                    <div class="sub">重排模式下：点击后才真正保存；自动只做视觉提示</div>
+                  </div>
+                  <div class="right">
+                    <select id="autoTranslateMode">
+                      <option value="off">Off</option>
+                      <option value="underline">Underline unknown</option>
+                      <option value="limit10">Auto-translate up to 10 per page</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </aside>
       </div>
     </div>
+
+    <div class="toast" id="toast"></div>
 
     <script type="module" src="/static/app.js"></script>
   </body>
